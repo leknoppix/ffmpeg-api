@@ -4,380 +4,832 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FFmpeg-API - Convertisseur Audio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #2563eb;
-            --secondary: #1e40af;
-            --bg: #0f172a;
-            --card-bg: #1e293b;
-            --text: #f1f5f9;
-            --text-muted: #94a3b8;
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --bg: #09090b;
+            --surface: #18181b;
+            --surface-2: #27272a;
+            --border: #3f3f46;
+            --text: #fafafa;
+            --text-muted: #a1a1aa;
+            --accent-green: #22c55e;
+            --accent-blue: #3b82f6;
+            --accent-red: #ef4444;
+            --accent-yellow: #eab308;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg);
             color: var(--text);
             line-height: 1.6;
             min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
         }
 
-        .container { max-width: 1000px; margin: 0 auto; padding: 2rem; }
+        .noise {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            z-index: 0;
+        }
 
+        .container { max-width: 1100px; margin: 0 auto; padding: 2rem; position: relative; z-index: 1; }
+
+        /* Header */
         header {
             text-align: center;
-            padding: 4rem 0;
-            border-bottom: 1px solid #334155;
+            padding: 5rem 0 4rem;
+            position: relative;
         }
 
-        h1 { font-size: 3rem; margin-bottom: 1rem; }
-        h1 span { color: var(--primary); }
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 24px;
+            margin-bottom: 2rem;
+            box-shadow: 0 20px 60px -15px rgba(99, 102, 241, 0.4);
+        }
 
-        .subtitle { color: var(--text-muted); font-size: 1.25rem; }
+        .logo svg { width: 48px; height: 48px; fill: white; }
 
-        .badges { margin-top: 1.5rem; }
+        h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 1rem;
+        }
+
+        h1 span {
+            background: linear-gradient(135deg, var(--primary) 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.25rem;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+
+        .badges {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
         .badge {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
             padding: 0.5rem 1rem;
-            background: var(--card-bg);
-            border-radius: 2rem;
-            margin: 0.25rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 100px;
             font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
         }
-        .badge.primary { background: var(--primary); color: white; }
 
-        .section { margin: 3rem 0; }
-        .section h2 { margin-bottom: 1.5rem; color: var(--primary); }
+        .badge:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
 
+        .badge svg { width: 16px; height: 16px; }
+
+        /* Gradient orbs */
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--primary);
+            top: -100px;
+            right: -100px;
+            opacity: 0.15;
+        }
+
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: #ec4899;
+            bottom: 100px;
+            left: -150px;
+            opacity: 0.1;
+        }
+
+        /* Section */
+        .section { margin: 5rem 0; }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .section-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+        }
+
+        .section-icon svg { width: 24px; height: 24px; stroke: var(--primary); }
+
+        .section h2 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+
+        /* Cards */
         .features {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 1.5rem;
         }
 
         .feature {
-            background: var(--card-bg);
-            padding: 1.5rem;
-            border-radius: 0.75rem;
-            border: 1px solid #334155;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
         }
-        .feature h3 { margin-bottom: 0.75rem; }
-        .feature p { color: var(--text-muted); font-size: 0.9rem; }
 
+        .feature::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .feature:hover {
+            border-color: var(--primary);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px -20px rgba(99, 102, 241, 0.3);
+        }
+
+        .feature:hover::before { opacity: 1; }
+
+        .feature-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 12px;
+            margin-bottom: 1.25rem;
+        }
+
+        .feature-icon svg { width: 24px; height: 24px; stroke: white; }
+
+        .feature h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .feature p {
+            color: var(--text-muted);
+            font-size: 0.9375rem;
+            line-height: 1.7;
+        }
+
+        /* Formats */
         .formats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+
+        .format {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .format:hover {
+            border-color: var(--primary);
+            transform: scale(1.02);
+        }
+
+        .format-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .format-desc {
+            color: var(--text-muted);
+            font-size: 0.8125rem;
+        }
+
+        /* Terminal */
+        .terminal {
+            background: var(--surface);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .terminal-header {
             display: flex;
-            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 1.5rem;
+            background: var(--surface-2);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .terminal-dot.red { background: #ef4444; }
+        .terminal-dot.yellow { background: #eab308; }
+        .terminal-dot.green { background: #22c55e; }
+
+        .terminal-title {
+            margin-left: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+        }
+
+        .terminal-body {
+            padding: 1.5rem 2rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            line-height: 2;
+        }
+
+        .terminal-body code { color: var(--text); }
+        .comment { color: var(--text-muted); }
+
+        /* Endpoints */
+        .endpoints {
+            display: flex;
+            flex-direction: column;
             gap: 0.75rem;
         }
-        .format {
-            background: var(--card-bg);
-            padding: 0.75rem 1.25rem;
-            border-radius: 0.5rem;
-            border: 1px solid #334155;
-        }
-        .format span { color: var(--primary); font-weight: bold; }
-
-        pre {
-            background: #0d1117;
-            padding: 1.5rem;
-            border-radius: 0.75rem;
-            overflow-x: auto;
-            border: 1px solid #334155;
-            margin: 1rem 0;
-        }
-        code { color: #e2e8f0; font-family: 'Fira Code', monospace; font-size: 0.875rem; }
-        .comment { color: #6b7280; }
 
         .endpoint {
-            background: var(--card-bg);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
             padding: 1rem 1.5rem;
-            border-radius: 0.5rem;
-            margin: 0.75rem 0;
             display: flex;
             align-items: center;
             gap: 1rem;
-            border: 1px solid #334155;
+            transition: all 0.2s;
         }
-        .method {
-            padding: 0.25rem 0.75rem;
-            border-radius: 0.25rem;
-            font-weight: bold;
-            font-size: 0.75rem;
-        }
-        .method.post { background: #16a34a; }
-        .method.get { background: #2563eb; }
-        .method.delete { background: #dc2626; }
 
+        .endpoint:hover {
+            border-color: var(--primary);
+            background: var(--surface-2);
+        }
+
+        .method {
+            padding: 0.375rem 0.875rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            min-width: 70px;
+            text-align: center;
+        }
+
+        .method.post { background: rgba(34, 197, 94, 0.15); color: var(--accent-green); }
+        .method.get { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+        .method.delete { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
+
+        .endpoint code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .endpoint:hover code { color: var(--text); }
+
+        /* Metrics */
         .metrics {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 1rem;
-            margin: 1.5rem 0;
         }
-        .metric {
-            background: var(--card-bg);
-            padding: 1.5rem;
-            border-radius: 0.75rem;
-            text-align: center;
-            border: 1px solid #334155;
-        }
-        .metric-value { font-size: 2rem; font-weight: bold; color: var(--primary); }
-        .metric-label { color: var(--text-muted); font-size: 0.875rem; }
 
+        .metric {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .metric:hover {
+            border-color: var(--primary);
+            transform: scale(1.02);
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            background: linear-gradient(135deg, var(--primary) 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        /* Swagger */
+        .swagger-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .swagger-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 1.5rem;
+            background: var(--surface-2);
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .swagger-header h3 {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .swagger-header h3 svg { stroke: var(--primary); }
+
+        .api-url-input {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.625rem 1rem;
+            border-radius: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            width: 280px;
+            transition: all 0.2s;
+        }
+
+        .api-url-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .api-url-input::placeholder { color: var(--text-muted); }
+
+        #swagger-ui { padding: 1.5rem; }
+
+        /* CTA */
         .cta {
             text-align: center;
-            padding: 3rem;
-            background: var(--card-bg);
-            border-radius: 0.75rem;
-            margin: 3rem 0;
-            border: 1px solid #334155;
+            padding: 4rem;
+            background: var(--surface);
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            margin: 5rem 0;
+            position: relative;
+            overflow: hidden;
         }
+
+        .cta::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 300px;
+            background: radial-gradient(ellipse, var(--primary), transparent 70%);
+            opacity: 0.15;
+            pointer-events: none;
+        }
+
+        .cta h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .cta p {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
         .btn {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
             padding: 1rem 2rem;
             background: var(--primary);
             color: white;
             text-decoration: none;
-            border-radius: 0.5rem;
-            font-weight: bold;
-            margin: 0.5rem;
-            transition: background 0.2s;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
         }
-        .btn:hover { background: var(--secondary); }
-        .btn.secondary { background: var(--card-bg); border: 1px solid #334155; }
 
+        .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.5);
+        }
+
+        .btn svg { width: 20px; height: 20px; }
+
+        .btn.secondary {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+        }
+
+        .btn.secondary:hover {
+            background: var(--surface);
+            border-color: var(--primary);
+        }
+
+        /* Footer */
         footer {
             text-align: center;
-            padding: 2rem;
-            color: var(--text-muted);
-            border-top: 1px solid #334155;
+            padding: 3rem 0;
+            border-top: 1px solid var(--border);
             margin-top: 3rem;
+            color: var(--text-muted);
         }
 
-        .terminal {
-            background: #0d1117;
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-            font-family: 'Fira Code', monospace;
-            border: 1px solid #334155;
+        footer a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: color 0.2s;
         }
-        .terminal-header {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-        .terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
-        .terminal-dot.red { background: #ff5f56; }
-        .terminal-dot.yellow { background: #ffbd2e; }
-        .terminal-dot.green { background: #27ca40; }
 
-        .swagger-section {
-            margin: 3rem 0;
-            background: var(--card-bg);
-            border-radius: 0.75rem;
-            border: 1px solid #334155;
-            overflow: hidden;
-        }
-        .swagger-header {
-            padding: 1rem 1.5rem;
-            background: #0d1117;
-            border-bottom: 1px solid #334155;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .swagger-header h3 { color: var(--text); }
-        .api-url-input {
-            background: var(--card-bg);
-            border: 1px solid #334155;
-            color: var(--text);
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            width: 300px;
-        }
-        .api-url-input::placeholder { color: var(--text-muted); }
-        #swagger-ui { min-height: 500px; }
+        footer a:hover { color: var(--text); }
 
-        /* Swagger UI overrides */
-        .swagger-ui .wrapper { max-width: 100% !important; }
-        .swagger-ui { background: var(--card-bg) !important; }
-        .swagger-ui * { color: var(--text) !important; }
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container { padding: 1.5rem; }
+            header { padding: 3rem 0 2rem; }
+            .section { margin: 3rem 0; }
+            .cta { padding: 3rem 1.5rem; }
+            .swagger-header { flex-direction: column; align-items: flex-start; }
+            .api-url-input { width: 100%; }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
     </style>
     <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
 </head>
 <body>
+    <div class="noise"></div>
     <div class="container">
         <header>
+            <div class="orb orb-1"></div>
+            <div class="orb orb-2"></div>
+
+            <div class="logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                    <path d="M2 17l10 5 10-5"/>
+                    <path d="M2 12l10 5 10-5"/>
+                </svg>
+            </div>
+
             <h1>FFmpeg<span>-API</span></h1>
-            <p class="subtitle">API de conversion audio avec Docker, FastAPI et FFmpeg</p>
+            <p class="subtitle">API de conversion audio haute performance avec Docker, FastAPI et FFmpeg. Simple, rapide, fiable.</p>
+
             <div class="badges">
-                <span class="badge primary">Docker</span>
-                <span class="badge">FastAPI</span>
-                <span class="badge">FFmpeg</span>
-                <span class="badge">Python</span>
+                <span class="badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 12l2 2 4-4"/></svg>
+                    Docker Ready
+                </span>
+                <span class="badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    FastAPI
+                </span>
+                <span class="badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    FFmpeg
+                </span>
+                <span class="badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+                    Open Source
+                </span>
             </div>
         </header>
 
         <section class="section">
-            <h2> Fonctionnalités</h2>
+            <div class="section-header">
+                <div class="section-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                </div>
+                <h2>Fonctionnalités</h2>
+            </div>
+
             <div class="features">
                 <div class="feature">
-                    <h3> Multi-Format</h3>
-                    <p>Conversion entre 6 formats audio : MP3, OGG, WAV, FLAC, AAC, M4A</p>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>
+                    </div>
+                    <h3>Multi-Format</h3>
+                    <p>Conversion entre 6 formats audio populaires : MP3, OGG, WAV, FLAC, AAC, M4A avec paramètres optimisés.</p>
                 </div>
+
                 <div class="feature">
-                    <h3> Hash MD5</h3>
-                    <p>Vérification d'intégrité des fichiers pour des téléchargements fiables</p>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    <h3>Hash MD5</h3>
+                    <p>Vérification d'intégrité des fichiers pour des téléchargements fiables et sécurisé.</p>
                 </div>
+
                 <div class="feature">
-                    <h3> Monitoring</h3>
-                    <p>Statistiques en temps réel via l'endpoint /metrics</p>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+                    </div>
+                    <h3>Monitoring</h3>
+                    <p>Tableaux de bord et statistiques en temps réel pour suivre les conversions.</p>
                 </div>
+
                 <div class="feature">
-                    <h3> Auto-Cleanup</h3>
-                    <p>Suppression automatique des fichiers après 12h</p>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </div>
+                    <h3>Auto-Cleanup</h3>
+                    <p>Nettoyage automatique des fichiers après 12 heures pour optimiser l'espace.</p>
                 </div>
+
                 <div class="feature">
-                    <h3> Swagger UI</h3>
-                    <p>Documentation interactive et testable sur /docs</p>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+                    </div>
+                    <h3>Swagger UI</h3>
+                    <p>Documentation interactive et testable directement dans le navigateur.</p>
                 </div>
+
                 <div class="feature">
-                    <h3> Léger</h3>
-                    <p>Image Docker ~630MB avec tout inclus</p>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    </div>
+                    <h3>Léger & Rapide</h3>
+                    <p>Image Docker optimisée (~630MB) avec conversion asynchrone non-bloquante.</p>
                 </div>
             </div>
         </section>
 
         <section class="section">
-            <h2> Formats Supportés</h2>
+            <div class="section-header">
+                <div class="section-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                </div>
+                <h2>Formats Supportés</h2>
+            </div>
+
             <div class="formats">
-                <div class="format"><span>MP3</span> - libmp3lame (~192 kbps)</div>
-                <div class="format"><span>OGG</span> - libvorbis (~96 kbps)</div>
-                <div class="format"><span>WAV</span> - PCM 16-bit lossless</div>
-                <div class="format"><span>FLAC</span> - FLAC lossless</div>
-                <div class="format"><span>AAC</span> - AAC (~128 kbps)</div>
-                <div class="format"><span>M4A</span> - AAC-LC (~128 kbps)</div>
+                <div class="format">
+                    <div class="format-name">MP3</div>
+                    <div class="format-desc">libmp3lame ~192 kbps</div>
+                </div>
+                <div class="format">
+                    <div class="format-name">OGG</div>
+                    <div class="format-desc">libvorbis ~96 kbps</div>
+                </div>
+                <div class="format">
+                    <div class="format-name">WAV</div>
+                    <div class="format-desc">PCM 16-bit lossless</div>
+                </div>
+                <div class="format">
+                    <div class="format-name">FLAC</div>
+                    <div class="format-desc">FLAC lossless</div>
+                </div>
+                <div class="format">
+                    <div class="format-name">AAC</div>
+                    <div class="format-desc">AAC ~128 kbps</div>
+                </div>
+                <div class="format">
+                    <div class="format-name">M4A</div>
+                    <div class="format-desc">AAC-LC ~128 kbps</div>
+                </div>
             </div>
         </section>
 
         <section class="section">
-            <h2> Installation</h2>
+            <div class="section-header">
+                <div class="section-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                </div>
+                <h2>Installation</h2>
+            </div>
+
             <div class="terminal">
                 <div class="terminal-header">
                     <div class="terminal-dot red"></div>
                     <div class="terminal-dot yellow"></div>
                     <div class="terminal-dot green"></div>
+                    <span class="terminal-title">terminal</span>
                 </div>
-                <code>
-git clone https://github.com/leknoppix/ffmpeg-api.git<br>
-cd ffmpeg-api<br>
-docker-compose up -d --build<br>
-<span class="comment"># Accès API: http://localhost:8000</span><br>
-<span class="comment"># Swagger: http://localhost:8000/docs</span>
-                </code>
+                <div class="terminal-body">
+                    <code>git clone https://github.com/leknoppix/ffmpeg-api.git</code><br>
+                    <code>cd ffmpeg-api</code><br>
+                    <code>docker-compose up -d --build</code><br><br>
+                    <span class="comment"># API disponible sur http://localhost:8000</span><br>
+                    <span class="comment"># Swagger UI sur http://localhost:8000/docs</span><br>
+                    <span class="comment"># GitHub Pages: https://leknoppix.github.io/ffmpeg-api</span>
+                </div>
             </div>
         </section>
 
         <section class="section">
-            <h2> API Endpoints</h2>
+            <div class="section-header">
+                <div class="section-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+                </div>
+                <h2>API Endpoints</h2>
+            </div>
 
-            <div class="endpoint">
-                <span class="method post">POST</span>
-                <code>/convert/upload/{input_format}?output_format={fmt}</code>
-            </div>
-            <div class="endpoint">
-                <span class="method get">GET</span>
-                <code>/convert/{job_id}</code>
-            </div>
-            <div class="endpoint">
-                <span class="method get">GET</span>
-                <code>/convert/{job_id}/download</code>
-            </div>
-            <div class="endpoint">
-                <span class="method post">POST</span>
-                <code>/convert/{job_id}/download-delete</code>
-            </div>
-            <div class="endpoint">
-                <span class="method delete">DEL</span>
-                <code>/convert/{job_id}</code>
-            </div>
-            <div class="endpoint">
-                <span class="method get">GET</span>
-                <code>/convert/metrics</code>
+            <div class="endpoints">
+                <div class="endpoint">
+                    <span class="method post">POST</span>
+                    <code>/convert/upload/{input_format}?output_format={fmt}</code>
+                </div>
+                <div class="endpoint">
+                    <span class="method get">GET</span>
+                    <code>/convert/{job_id}</code>
+                </div>
+                <div class="endpoint">
+                    <span class="method get">GET</span>
+                    <code>/convert/{job_id}/download</code>
+                </div>
+                <div class="endpoint">
+                    <span class="method post">POST</span>
+                    <code>/convert/{job_id}/download-delete</code>
+                </div>
+                <div class="endpoint">
+                    <span class="method delete">DEL</span>
+                    <code>/convert/{job_id}</code>
+                </div>
+                <div class="endpoint">
+                    <span class="method get">GET</span>
+                    <code>/convert/metrics</code>
+                </div>
             </div>
         </section>
 
         <section class="section">
-            <h2> Utilisation Rapide</h2>
-            <pre><code># Upload et conversion
-curl -X POST "http://localhost:8000/convert/upload/mp3?output_format=ogg" \
-  -F "file=@audio.mp3"
+            <div class="section-header">
+                <div class="section-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+                </div>
+                <h2>Monitoring</h2>
+            </div>
 
-<span class="comment"># Réponse:</span>
-<span class="comment"># {"job_id": "abc123...", "input_hash": "...", "message": "..."}</span>
-
-<span class="comment"># Vérifier le statut</span>
-curl http://localhost:8000/convert/{job_id}
-
-<span class="comment"># Télécharger</span>
-curl -O http://localhost:8000/convert/{job_id}/download
-
-<span class="comment"># Télécharger + supprimer avec vérification hash</span>
-HASH=$(md5sum downloaded.ogg | awk '{print $1}')
-curl -X POST "http://localhost:8000/convert/{job_id}/download-delete" \
-  -H "X-Content-Hash: $HASH"</code></pre>
-        </section>
-
-        <section class="section">
-            <h2> Monitoring</h2>
             <div class="metrics">
                 <div class="metric">
-                    <div class="metric-value" id="jobs-created">-</div>
+                    <div class="metric-value" id="jobs-created">0</div>
                     <div class="metric-label">Jobs Créés</div>
                 </div>
                 <div class="metric">
-                    <div class="metric-value" id="jobs-completed">-</div>
+                    <div class="metric-value" id="jobs-completed">0</div>
                     <div class="metric-label">Jobs Terminés</div>
                 </div>
                 <div class="metric">
-                    <div class="metric-value" id="jobs-failed">-</div>
+                    <div class="metric-value" id="jobs-failed">0</div>
                     <div class="metric-label">Jobs Échoués</div>
                 </div>
                 <div class="metric">
-                    <div class="metric-value" id="bytes-processed">-</div>
+                    <div class="metric-value" id="bytes-processed">0</div>
                     <div class="metric-label">Octets Traités</div>
                 </div>
             </div>
-            <pre><code>curl http://localhost:8000/convert/metrics</code></pre>
         </section>
 
         <section class="swagger-section">
             <div class="swagger-header">
-                <h3> API Documentation (Swagger)</h3>
+                <h3>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <path d="M14 2v6h6"/>
+                        <path d="M16 13H8"/>
+                        <path d="M16 17H8"/>
+                        <path d="M10 9H8"/>
+                    </svg>
+                    Documentation API (Swagger)
+                </h3>
                 <input type="text" id="api-url" class="api-url-input" placeholder="http://localhost:8000" value="http://localhost:8000">
             </div>
             <div id="swagger-ui"></div>
         </section>
 
-        <section class="cta">
-            <h2> Prêt à démarrer ?</h2>
-            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Déployez votre propre instance en quelques minutes</p>
-            <a href="https://github.com/leknoppix/ffmpeg-api" class="btn">Voir sur GitHub</a>
-            <a href="/docs" class="btn secondary">Swagger UI</a>
-        </section>
+        <div class="cta">
+            <h2>Prêt à démarrer ?</h2>
+            <p>Déployez votre propre instance en quelques minutes</p>
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <a href="https://github.com/leknoppix/ffmpeg-api" class="btn" target="_blank">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+                    </svg>
+                    Voir sur GitHub
+                </a>
+                <a href="https://github.com/leknoppix/ffmpeg-api/archive/refs/heads/main.zip" class="btn secondary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Télécharger
+                </a>
+            </div>
+        </div>
 
         <footer>
-            <p>FFmpeg-API &copy; 2024 | Créé avec FastAPI, FFmpeg et Docker</p>
+            <p>FFmpeg-API &copy; 2024 | Créé avec <a href="https://fastapi.tiangolo.com" target="_blank">FastAPI</a>, <a href="https://ffmpeg.org" target="_blank">FFmpeg</a> et <a href="https://www.docker.com" target="_blank">Docker</a></p>
             <p style="margin-top: 0.5rem;">
-                <a href="https://github.com/leknoppix/ffmpeg-api" style="color: var(--primary);">GitHub</a> |
-                <a href="/docs" style="color: var(--primary);">API Docs</a>
+                <a href="https://github.com/leknoppix/ffmpeg-api">GitHub</a> ·
+                <a href="https://leknoppix.github.io/ffmpeg-api">Documentation</a>
             </p>
         </footer>
     </div>
 
     <script>
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
         async function loadMetrics() {
             try {
                 const resp = await fetch('/convert/metrics');
@@ -387,16 +839,10 @@ curl -X POST "http://localhost:8000/convert/{job_id}/download-delete" \
                 document.getElementById('jobs-failed').textContent = data.jobs_failed || 0;
                 document.getElementById('bytes-processed').textContent = formatBytes(data.total_bytes_processed || 0);
             } catch (e) {
-                console.log('Metrics non disponible');
+                // Metrics non disponible - gardé à 0
             }
         }
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 B';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-        }
+
         loadMetrics();
     </script>
     <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
