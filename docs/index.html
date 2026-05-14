@@ -172,7 +172,40 @@
         .terminal-dot.red { background: #ff5f56; }
         .terminal-dot.yellow { background: #ffbd2e; }
         .terminal-dot.green { background: #27ca40; }
+
+        .swagger-section {
+            margin: 3rem 0;
+            background: var(--card-bg);
+            border-radius: 0.75rem;
+            border: 1px solid #334155;
+            overflow: hidden;
+        }
+        .swagger-header {
+            padding: 1rem 1.5rem;
+            background: #0d1117;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .swagger-header h3 { color: var(--text); }
+        .api-url-input {
+            background: var(--card-bg);
+            border: 1px solid #334155;
+            color: var(--text);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            width: 300px;
+        }
+        .api-url-input::placeholder { color: var(--text-muted); }
+        #swagger-ui { min-height: 500px; }
+
+        /* Swagger UI overrides */
+        .swagger-ui .wrapper { max-width: 100% !important; }
+        .swagger-ui { background: var(--card-bg) !important; }
+        .swagger-ui * { color: var(--text) !important; }
     </style>
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
 </head>
 <body>
     <div class="container">
@@ -320,6 +353,14 @@ curl -X POST "http://localhost:8000/convert/{job_id}/download-delete" \
             <pre><code>curl http://localhost:8000/convert/metrics</code></pre>
         </section>
 
+        <section class="swagger-section">
+            <div class="swagger-header">
+                <h3> API Documentation (Swagger)</h3>
+                <input type="text" id="api-url" class="api-url-input" placeholder="http://localhost:8000" value="http://localhost:8000">
+            </div>
+            <div id="swagger-ui"></div>
+        </section>
+
         <section class="cta">
             <h2> Prêt à démarrer ?</h2>
             <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Déployez votre propre instance en quelques minutes</p>
@@ -357,6 +398,26 @@ curl -X POST "http://localhost:8000/convert/{job_id}/download-delete" \
             return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
         }
         loadMetrics();
+    </script>
+    <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+    <script>
+        function initSwagger() {
+            const url = document.getElementById('api-url').value;
+            SwaggerUIBundle({
+                url: url + "/openapi.json",
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIBundle.SwaggerUIStandalonePreset
+                ],
+                layout: "BaseLayout",
+                defaultModelsExpandDepth: -1,
+                displayRequestDuration: true
+            });
+        }
+        initSwagger();
+        document.getElementById('api-url').addEventListener('change', initSwagger);
     </script>
 </body>
 </html>
