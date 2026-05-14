@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FFmpeg-API - Convertisseur Audio</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #1e40af;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 1000px; margin: 0 auto; padding: 2rem; }
+
+        header {
+            text-align: center;
+            padding: 4rem 0;
+            border-bottom: 1px solid #334155;
+        }
+
+        h1 { font-size: 3rem; margin-bottom: 1rem; }
+        h1 span { color: var(--primary); }
+
+        .subtitle { color: var(--text-muted); font-size: 1.25rem; }
+
+        .badges { margin-top: 1.5rem; }
+        .badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: var(--card-bg);
+            border-radius: 2rem;
+            margin: 0.25rem;
+            font-size: 0.875rem;
+        }
+        .badge.primary { background: var(--primary); color: white; }
+
+        .section { margin: 3rem 0; }
+        .section h2 { margin-bottom: 1.5rem; color: var(--primary); }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .feature {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            border: 1px solid #334155;
+        }
+        .feature h3 { margin-bottom: 0.75rem; }
+        .feature p { color: var(--text-muted); font-size: 0.9rem; }
+
+        .formats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        .format {
+            background: var(--card-bg);
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            border: 1px solid #334155;
+        }
+        .format span { color: var(--primary); font-weight: bold; }
+
+        pre {
+            background: #0d1117;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            overflow-x: auto;
+            border: 1px solid #334155;
+            margin: 1rem 0;
+        }
+        code { color: #e2e8f0; font-family: 'Fira Code', monospace; font-size: 0.875rem; }
+        .comment { color: #6b7280; }
+
+        .endpoint {
+            background: var(--card-bg);
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            margin: 0.75rem 0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border: 1px solid #334155;
+        }
+        .method {
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.25rem;
+            font-weight: bold;
+            font-size: 0.75rem;
+        }
+        .method.post { background: #16a34a; }
+        .method.get { background: #2563eb; }
+        .method.delete { background: #dc2626; }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        .metric {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            border: 1px solid #334155;
+        }
+        .metric-value { font-size: 2rem; font-weight: bold; color: var(--primary); }
+        .metric-label { color: var(--text-muted); font-size: 0.875rem; }
+
+        .cta {
+            text-align: center;
+            padding: 3rem;
+            background: var(--card-bg);
+            border-radius: 0.75rem;
+            margin: 3rem 0;
+            border: 1px solid #334155;
+        }
+        .btn {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            margin: 0.5rem;
+            transition: background 0.2s;
+        }
+        .btn:hover { background: var(--secondary); }
+        .btn.secondary { background: var(--card-bg); border: 1px solid #334155; }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            border-top: 1px solid #334155;
+            margin-top: 3rem;
+        }
+
+        .terminal {
+            background: #0d1117;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            font-family: 'Fira Code', monospace;
+            border: 1px solid #334155;
+        }
+        .terminal-header {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .terminal-dot.red { background: #ff5f56; }
+        .terminal-dot.yellow { background: #ffbd2e; }
+        .terminal-dot.green { background: #27ca40; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>FFmpeg<span>-API</span></h1>
+            <p class="subtitle">API de conversion audio avec Docker, FastAPI et FFmpeg</p>
+            <div class="badges">
+                <span class="badge primary">Docker</span>
+                <span class="badge">FastAPI</span>
+                <span class="badge">FFmpeg</span>
+                <span class="badge">Python</span>
+            </div>
+        </header>
+
+        <section class="section">
+            <h2> Fonctionnalités</h2>
+            <div class="features">
+                <div class="feature">
+                    <h3> Multi-Format</h3>
+                    <p>Conversion entre 6 formats audio : MP3, OGG, WAV, FLAC, AAC, M4A</p>
+                </div>
+                <div class="feature">
+                    <h3> Hash MD5</h3>
+                    <p>Vérification d'intégrité des fichiers pour des téléchargements fiables</p>
+                </div>
+                <div class="feature">
+                    <h3> Monitoring</h3>
+                    <p>Statistiques en temps réel via l'endpoint /metrics</p>
+                </div>
+                <div class="feature">
+                    <h3> Auto-Cleanup</h3>
+                    <p>Suppression automatique des fichiers après 12h</p>
+                </div>
+                <div class="feature">
+                    <h3> Swagger UI</h3>
+                    <p>Documentation interactive et testable sur /docs</p>
+                </div>
+                <div class="feature">
+                    <h3> Léger</h3>
+                    <p>Image Docker ~630MB avec tout inclus</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2> Formats Supportés</h2>
+            <div class="formats">
+                <div class="format"><span>MP3</span> - libmp3lame (~192 kbps)</div>
+                <div class="format"><span>OGG</span> - libvorbis (~96 kbps)</div>
+                <div class="format"><span>WAV</span> - PCM 16-bit lossless</div>
+                <div class="format"><span>FLAC</span> - FLAC lossless</div>
+                <div class="format"><span>AAC</span> - AAC (~128 kbps)</div>
+                <div class="format"><span>M4A</span> - AAC-LC (~128 kbps)</div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2> Installation</h2>
+            <div class="terminal">
+                <div class="terminal-header">
+                    <div class="terminal-dot red"></div>
+                    <div class="terminal-dot yellow"></div>
+                    <div class="terminal-dot green"></div>
+                </div>
+                <code>
+git clone https://github.com/leknoppix/ffmpeg-api.git<br>
+cd ffmpeg-api<br>
+docker-compose up -d --build<br>
+<span class="comment"># Accès API: http://localhost:8000</span><br>
+<span class="comment"># Swagger: http://localhost:8000/docs</span>
+                </code>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2> API Endpoints</h2>
+
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <code>/convert/upload/{input_format}?output_format={fmt}</code>
+            </div>
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <code>/convert/{job_id}</code>
+            </div>
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <code>/convert/{job_id}/download</code>
+            </div>
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <code>/convert/{job_id}/download-delete</code>
+            </div>
+            <div class="endpoint">
+                <span class="method delete">DEL</span>
+                <code>/convert/{job_id}</code>
+            </div>
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <code>/convert/metrics</code>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2> Utilisation Rapide</h2>
+            <pre><code># Upload et conversion
+curl -X POST "http://localhost:8000/convert/upload/mp3?output_format=ogg" \
+  -F "file=@audio.mp3"
+
+<span class="comment"># Réponse:</span>
+<span class="comment"># {"job_id": "abc123...", "input_hash": "...", "message": "..."}</span>
+
+<span class="comment"># Vérifier le statut</span>
+curl http://localhost:8000/convert/{job_id}
+
+<span class="comment"># Télécharger</span>
+curl -O http://localhost:8000/convert/{job_id}/download
+
+<span class="comment"># Télécharger + supprimer avec vérification hash</span>
+HASH=$(md5sum downloaded.ogg | awk '{print $1}')
+curl -X POST "http://localhost:8000/convert/{job_id}/download-delete" \
+  -H "X-Content-Hash: $HASH"</code></pre>
+        </section>
+
+        <section class="section">
+            <h2> Monitoring</h2>
+            <div class="metrics">
+                <div class="metric">
+                    <div class="metric-value" id="jobs-created">-</div>
+                    <div class="metric-label">Jobs Créés</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="jobs-completed">-</div>
+                    <div class="metric-label">Jobs Terminés</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="jobs-failed">-</div>
+                    <div class="metric-label">Jobs Échoués</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="bytes-processed">-</div>
+                    <div class="metric-label">Octets Traités</div>
+                </div>
+            </div>
+            <pre><code>curl http://localhost:8000/convert/metrics</code></pre>
+        </section>
+
+        <section class="cta">
+            <h2> Prêt à démarrer ?</h2>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Déployez votre propre instance en quelques minutes</p>
+            <a href="https://github.com/leknoppix/ffmpeg-api" class="btn">Voir sur GitHub</a>
+            <a href="/docs" class="btn secondary">Swagger UI</a>
+        </section>
+
+        <footer>
+            <p>FFmpeg-API &copy; 2024 | Créé avec FastAPI, FFmpeg et Docker</p>
+            <p style="margin-top: 0.5rem;">
+                <a href="https://github.com/leknoppix/ffmpeg-api" style="color: var(--primary);">GitHub</a> |
+                <a href="/docs" style="color: var(--primary);">API Docs</a>
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        async function loadMetrics() {
+            try {
+                const resp = await fetch('/convert/metrics');
+                const data = await resp.json();
+                document.getElementById('jobs-created').textContent = data.jobs_created || 0;
+                document.getElementById('jobs-completed').textContent = data.jobs_completed || 0;
+                document.getElementById('jobs-failed').textContent = data.jobs_failed || 0;
+                document.getElementById('bytes-processed').textContent = formatBytes(data.total_bytes_processed || 0);
+            } catch (e) {
+                console.log('Metrics non disponible');
+            }
+        }
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+        loadMetrics();
+    </script>
+</body>
+</html>
