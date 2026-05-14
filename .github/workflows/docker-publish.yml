@@ -96,23 +96,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Verify docs folder exists
-        run: |
-          ls -la docs/
-          test -f docs/index.html && echo "index.html exists" || exit 1
-
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
-      - name: Copy index.html
+      - name: Build documentation
         run: |
-          cp docs/index.html ./index.html
-          ls -la index.html
+          mkdir -p _site
+          cp docs/index.html _site/index.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'index.html'
+          path: '_site'
 
       - name: Deploy to GitHub Pages
         id: deployment
