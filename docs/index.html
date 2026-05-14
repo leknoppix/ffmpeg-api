@@ -516,6 +516,11 @@
             border-color: var(--primary);
         }
 
+        /* Docker Section */
+        .docker-section {
+            margin: 5rem 0;
+        }
+
         /* Footer */
         footer {
             text-align: center;
@@ -713,7 +718,7 @@
         <section class="section">
             <div class="section-header">
                 <div class="section-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0 3-4.03 3-9s-1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
                 </div>
                 <h2>API Endpoints</h2>
             </div>
@@ -799,21 +804,72 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
                         <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
                     </svg>
-                    Voir sur GitHub
+                    GitHub
                 </a>
-                <a href="https://github.com/leknoppix/ffmpeg-api/archive/refs/heads/main.zip" class="btn secondary">
+                <a href="https://hub.docker.com/r/leknoppix/ffmpeg-api" class="btn secondary" target="_blank">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="7 10 12 15 17 10"/>
-                        <line x1="12" y1="15" x2="12" y2="3"/>
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
                     </svg>
-                    Télécharger
+                    Docker Hub
+                </a>
+                <a href="https://github.com/leknoppix/ffmpeg-api/generate" class="btn secondary" target="_blank">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                        <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                    Utiliser ce template
                 </a>
             </div>
         </div>
 
+        <div class="docker-section">
+            <div class="section-header">
+                <div class="section-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                </div>
+                <h2>Déploiement Docker</h2>
+            </div>
+
+            <div class="terminal">
+                <div class="terminal-header">
+                    <div class="terminal-dot red"></div>
+                    <div class="terminal-dot yellow"></div>
+                    <div class="terminal-dot green"></div>
+                    <span class="terminal-title">docker-compose.yml</span>
+                </div>
+                <div class="terminal-body">
+                    <code>services:<br>
+  &nbsp;&nbsp;converter:<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;image: leknoppix/ffmpeg-api:latest<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;container_name: audio-converter<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;ports:<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- "8000:8000"<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;volumes:<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- ./tmp:/tmp/convert<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;restart: unless-stopped</code>
+                </div>
+            </div>
+
+            <div class="terminal" style="margin-top: 1.5rem;">
+                <div class="terminal-header">
+                    <div class="terminal-dot red"></div>
+                    <div class="terminal-dot yellow"></div>
+                    <div class="terminal-dot green"></div>
+                    <span class="terminal-title">commandes</span>
+                </div>
+                <div class="terminal-body">
+                    <code>docker pull leknoppix/ffmpeg-api:latest<br>
+docker run -d -p 8000:8000 \<br>
+&nbsp;&nbsp;-v $(pwd)/tmp:/tmp/convert \<br>
+&nbsp;&nbsp;--name audio-converter \<br>
+&nbsp;&nbsp;leknoppix/ffmpeg-api:latest</code>
+                </div>
+            </div>
+        </div>
+
         <footer>
-            <p>FFmpeg-API &copy; 2024 | Créé avec <a href="https://fastapi.tiangolo.com" target="_blank">FastAPI</a>, <a href="https://ffmpeg.org" target="_blank">FFmpeg</a> et <a href="https://www.docker.com" target="_blank">Docker</a></p>
+            <p>FFmpeg-API © 2024 | Créé avec <a href="https://fastapi.tiangolo.com" target="_blank">FastAPI</a>, <a href="https://ffmpeg.org" target="_blank">FFmpeg</a> et <a href="https://www.docker.com" target="_blank">Docker</a></p>
             <p style="margin-top: 0.5rem;">
                 <a href="https://github.com/leknoppix/ffmpeg-api">GitHub</a> ·
                 <a href="https://leknoppix.github.io/ffmpeg-api">Documentation</a>
