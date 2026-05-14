@@ -1,4 +1,4 @@
-name: Build, Push and Deploy
+name: Build and Push Docker Image
 
 on:
   push:
@@ -8,15 +8,6 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 env:
   REGISTRY: docker.io
@@ -87,28 +78,3 @@ jobs:
           sleep 5
           curl -f http://localhost:8000/docs || exit 1
           docker stop test-api
-
-  deploy-pages:
-    needs: build
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Build documentation
-        run: |
-          mkdir -p _site
-          cp docs/index.html _site/index.html
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: '_site'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
