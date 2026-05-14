@@ -96,11 +96,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Verify docs folder exists
+        run: |
+          ls -la docs/
+          test -f docs/index.html && echo "index.html exists" || exit 1
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
-      - name: Copy index.html to root
-        run: cp docs/index.html ./index.html
+      - name: Copy index.html
+        run: |
+          cp docs/index.html ./index.html
+          ls -la index.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
