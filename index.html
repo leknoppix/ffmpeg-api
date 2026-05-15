@@ -595,6 +595,14 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
                     Open Source
                 </span>
+                <span class="badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    HTTP Basic Auth
+                </span>
+                <span class="badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    HTTP Basic Auth
+                </span>
             </div>
         </header>
 
@@ -607,6 +615,14 @@
             </div>
 
             <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    </div>
+                    <h3>HTTP Basic Auth</h3>
+                    <p>Protection par login/mot de passe configurable via variables d'environnement Docker.</p>
+                </div>
+
                 <div class="feature">
                     <div class="feature-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>
@@ -712,9 +728,15 @@
                     <code>git clone https://github.com/leknoppix/ffmpeg-api.git</code><br>
                     <code>cd ffmpeg-api</code><br>
                     <code>docker-compose up -d --build</code><br><br>
+                    <span class="comment"># Toutes les routes sont protégées par HTTP Basic Auth</span><br>
+                    <span class="comment"># Credentials par défaut: admin / changeme</span><br><br>
+                    <code># Upload avec curl</code><br>
+                    <code>curl -X POST "http://localhost:8000/convert/upload/mp3" \</code><br>
+                    <code>&nbsp;&nbsp;-u "admin:changeme" \</code><br>
+                    <code>&nbsp;&nbsp;-F "file=@audio.mp3" \</code><br>
+                    <code>&nbsp;&nbsp;-F "output_format=ogg"</code><br><br>
                     <span class="comment"># API disponible sur http://localhost:8000</span><br>
-                    <span class="comment"># Swagger UI sur http://localhost:8000/docs</span><br>
-                    <span class="comment"># GitHub Pages: https://leknoppix.github.io/ffmpeg-api</span>
+                    <span class="comment"># Swagger UI sur http://localhost:8000/docs</span>
                 </div>
             </div>
         </section>
@@ -751,6 +773,10 @@
                 <div class="endpoint">
                     <span class="method get">GET</span>
                     <code>/convert/metrics</code>
+                </div>
+                <div class="endpoint">
+                    <span class="method get">GET</span>
+                    <code>/robots.txt</code>
                 </div>
             </div>
         </section>
@@ -834,6 +860,9 @@
   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- "8000:8000"<br>
   &nbsp;&nbsp;&nbsp;&nbsp;volumes:<br>
   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- ./tmp:/tmp/convert<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;environment:<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- AUTH_USERNAME=admin<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- AUTH_PASSWORD=changeme<br>
   &nbsp;&nbsp;&nbsp;&nbsp;restart: unless-stopped</code>
                 </div>
             </div>
