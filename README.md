@@ -4,42 +4,47 @@ API de conversion audio avec Docker, FastAPI et FFmpeg.
 
 ## Fonctionnalités
 
+- **Authentification** : protection par HTTP Basic Auth (login/mot de passe)
 - **Conversion multi-format** : mp3, ogg, wav, flac, aac, m4a
 - **Stockage propre** : fichiers convertis dans `./tmp/`
 - **Hash MD5** : vérification d'intégrité des fichiers
 - **Monitoring** : statistiques via `/convert/metrics`
 - **Auto-cleanup** : suppression automatique des fichiers > 12h
 - **Swagger UI** : documentation interactive à `/docs`
+- **robots.txt** : protection anti-indexation des moteurs de recherche
 
 ## Installation
 
 ```bash
-# Build et lancement
-docker build -t audio-converter .
-docker run -d -p 8000:8000 -v $(pwd)/tmp:/tmp/convert --name audio-converter audio-converter
+# Cloner le projet
+git clone <repo-url>
+cd ffmpeg
 
-# Ou avec docker-compose
+# Lancer avec docker-compose
 docker-compose up -d --build
 ```
 
-## Endpoints
+## Authentification
 
-| Méthode | Route | Description |
-|---------|-------|-------------|
-| POST | `/convert/upload/{input_format}?output_format={fmt}` | Upload + conversion |
-| GET | `/convert/{job_id}` | Statut du job |
-| GET | `/convert/{job_id}/download` | Télécharger le fichier converti |
-| POST | `/convert/{job_id}/download-delete` | Télécharger + vérifier hash + supprimer |
-| DELETE | `/convert/{job_id}` | Supprimer le job |
-| GET | `/convert/metrics` | Statistiques (jobs, cleanup) |
+Toutes les routes sont protégées par HTTP Basic Auth.
+
+**Variables d'environnement (dans `docker-compose.yml`) :**
+```yaml
+environment:
+  - AUTH_USERNAME=admin
+  - AUTH_PASSWORD=changeme
+```
+
+**⚠️ Important :** Changez le mot de passe avant de mettre en production !
 
 ## Utilisation
 
 ### Upload et conversion
 
 ```bash
-# Upload mp3 → ogg
+# Upload mp3 → ogg avec authentification
 curl -X POST "http://localhost:8000/convert/upload/mp3?output_format=ogg" \
+  -u "admin:changeme" \
   -F "file=@audio.mp3"
 ```
 
@@ -56,13 +61,13 @@ curl -X POST "http://localhost:8000/convert/upload/mp3?output_format=ogg" \
 
 ```bash
 # Vérifier le statut
-curl http://localhost:8000/convert/{job_id}
+curl -u "admin:changeme" http://localhost:8000/convert/{job_id}
 
 # Télécharger
-curl -O http://localhost:8000/convert/{job_id}/download
+curl -u "admin:changeme" -O http://localhost:8000/convert/{job_id}/download
 
 # Supprimer
-curl -X DELETE http://localhost:8000/convert/{job_id}
+curl -u "admin:changeme" -X DELETE http://localhost:8000/convert/{job_id}
 ```
 
 ### Vérification hash avant suppression
@@ -73,6 +78,7 @@ HASH=$(md5sum downloaded.ogg | awk '{print $1}')
 
 # Supprimer avec vérification
 curl -X POST "http://localhost:8000/convert/{job_id}/download-delete" \
+  -u "admin:changeme" \
   -H "X-Content-Hash: $HASH"
 ```
 
@@ -86,10 +92,22 @@ curl -X POST "http://localhost:8000/convert/{job_id}/download-delete" \
 {"success": false, "message": "Hash mismatch! File NOT deleted.", "job_id": "...", "hash_verified": false}
 ```
 
+## Endpoints
+
+| Méthode | Route | Description |
+|---------|-------|-------------|
+| POST | `/convert/upload/{input_format}?output_format={fmt}` | Upload + conversion |
+| GET | `/convert/{job_id}` | Statut du job |
+| GET | `/convert/{job_id}/download` | Télécharger le fichier converti |
+| POST | `/convert/{job_id}/download-delete` | Télécharger + vérifier hash + supprimer |
+| DELETE | `/convert/{job_id}` | Supprimer le job |
+| GET | `/convert/metrics` | Statistiques (jobs, cleanup) |
+| GET | `/robots.txt` | Bloquer l'indexation par les moteurs |
+
 ## Monitoring
 
 ```bash
-curl http://localhost:8000/convert/metrics
+curl -u "admin:changeme" http://localhost:8000/convert/metrics
 ```
 
 **Réponse :**

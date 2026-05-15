@@ -1,7 +1,9 @@
 import asyncio
 import hashlib
-from fastapi import APIRouter, Header, UploadFile, File, HTTPException
+import os
+from fastapi import APIRouter, Header, UploadFile, File, HTTPException, Depends, status
 from fastapi.responses import FileResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
 
 from app.routes.formats import SUPPORTED_INPUTS, SUPPORTED_OUTPUTS
@@ -12,6 +14,21 @@ from app.utils.crypto import compute_file_hash
 from app.services.job import JobStatus
 
 router = APIRouter()
+security = HTTPBasic()
+
+
+def get_current_user(credentials: HTTPBasicCredentials = Depends(security)):
+    username = os.environ.get("AUTH_USERNAME", "admin")
+    password = os.environ.get("AUTH_PASSWORD", "changeme")
+
+    if credentials.username != username or credentials.password != password:
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
 
 
 class UploadResponse(BaseModel):
@@ -77,6 +94,7 @@ async def upload_file(
     input_format: str,
     output_format: str,
     file: UploadFile = File(...),
+    username: str = Depends(get_current_user),
 ):
     input_format = input_format.lower()
     output_format = output_format.lower()
@@ -122,7 +140,7 @@ async def upload_file(
     summary="API monitoring metrics",
     description="Get conversion statistics and job counts.",
 )
-async def get_metrics():
+async def get_metrics(username: str = Depends(get_current_user)):
     """Return current API metrics."""
     return MetricsResponse(**metrics.to_dict())
 
@@ -133,7 +151,7 @@ async def get_metrics():
     summary="Get job status",
     description="Check the status of a conversion job.",
 )
-async def get_status(job_id: str):
+async def get_status(job_id: str, username: str = Depends(get_current_user)):
     job = job_manager.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -157,7 +175,7 @@ async def get_status(job_id: str):
     summary="Download converted file",
     description="Download the converted audio file.",
 )
-async def download_file(job_id: str):
+async def download_file(job_id: str, username: str = Depends(get_current_user)):
     job = job_manager.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -198,6 +216,7 @@ async def download_file(job_id: str):
 async def download_and_delete(
     job_id: str,
     x_content_hash: str | None = Header(None, alias="X-Content-Hash"),
+    username: str = Depends(get_current_user),
 ):
     job = job_manager.get_job(job_id)
     if not job:
@@ -255,6 +274,7 @@ async def download_and_delete(
 async def delete_job(
     job_id: str,
     x_content_hash: str | None = Header(None, alias="X-Content-Hash"),
+    username: str = Depends(get_current_user),
 ):
     job = job_manager.get_job(job_id)
     if not job:
